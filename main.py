@@ -1,11 +1,14 @@
 import discord
 import os
+from dotenv import load_dotenv
 from discord.ext import commands
 
 from cogs.commands import update_voice_stats
 
 # Замените на свой токен
-TOKEN = os.getenv('DISCORD_TOKEN')
+load_dotenv()
+TOKEN = os.getenv('discord_token')
+print(TOKEN)
 
 
 intents = discord.Intents.all()
