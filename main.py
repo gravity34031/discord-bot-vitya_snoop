@@ -52,7 +52,7 @@ async def on_app_command_error(interaction: discord.Interaction, error):
     if isinstance(error, discord.app_commands.CommandOnCooldown):
         retry_after = round(error.retry_after)
         await interaction.response.send_message(
-            f"⏳ Подожди {retry_after} секунд перед повторным использованием команды!",
+            f"⏳ Подожди {retry_after} сек. перед повторным использованием команды!",
             ephemeral=True
         )
 

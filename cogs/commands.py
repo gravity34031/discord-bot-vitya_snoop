@@ -19,7 +19,7 @@ class CommandCog(commands.Cog):
     # randomly change nickname
     @app_commands.command(name="snoop", description="Случайным образом меняет никнейм")
     @app_commands.describe(target="Имя пользователя(через @ или никнейм)")
-    @app_commands.checks.cooldown(rate=1, per=5, key=lambda i: (i.user.id))
+    @app_commands.checks.cooldown(rate=1, per=2, key=lambda i: (i.user.id))
     # @in_allowed_channels(1354784115613761606)
     async def snoop(self, interaction: discord.Interaction, target: str|None=None) -> None:
         await interaction.response.defer(ephemeral=True)
@@ -34,6 +34,7 @@ class CommandCog(commands.Cog):
 
     @app_commands.command(name="stats", description="Просмотр статистики")
     @app_commands.describe(target="Имя пользователя(через @ или никнейм)")
+    @app_commands.checks.cooldown(rate=1, per=10, key=lambda i: (i.user.id))
     async def stats(self, interaction: discord.Interaction, target: str|None=None) -> None:
         member = await self._get_user_from_mention(interaction, target)
         if member is None: return
@@ -62,6 +63,7 @@ class CommandCog(commands.Cog):
 
 
     @app_commands.command(name="top", description="Топ пользователей по времени в голосовых каналах")
+    @app_commands.checks.cooldown(rate=1, per=30, key=lambda i: (i.user.id))
     async def top(self, interaction: discord.Interaction) -> None:
         try:
             guild_id = interaction.guild.id
@@ -87,6 +89,7 @@ class CommandCog(commands.Cog):
     # send a message
     @app_commands.command(name="say", description="Отправка сообщения")
     @app_commands.describe(message="Сообщение")
+    @app_commands.checks.cooldown(rate=1, per=5, key=lambda i: (i.user.id))
     async def say(self, interaction: discord.Interaction, message: str) -> None:
         await interaction.response.send_message(message)
 
@@ -94,6 +97,7 @@ class CommandCog(commands.Cog):
     # get channel id
     @app_commands.command(name="get_channel_id", description="Get channel id")
     @app_commands.describe(name="Channel name")
+    @app_commands.checks.cooldown(rate=1, per=5, key=lambda i: (i.user.id))
     async def get_channel_id(self, interaction: discord.Interaction, name: str) -> None:
         for channel in interaction.guild.channels:
             if channel.name == name:
