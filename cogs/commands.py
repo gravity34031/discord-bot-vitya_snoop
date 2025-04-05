@@ -34,7 +34,7 @@ class CommandCog(commands.Cog):
 
     @app_commands.command(name="stats", description="Просмотр статистики")
     @app_commands.describe(target="Имя пользователя(через @ или никнейм)")
-    @app_commands.checks.cooldown(rate=1, per=10, key=lambda i: (i.user.id))
+    @app_commands.checks.cooldown(rate=1, per=5, key=lambda i: (i.user.id))
     async def stats(self, interaction: discord.Interaction, target: str|None=None) -> None:
         member = await self._get_user_from_mention(interaction, target)
         if member is None: return
@@ -70,7 +70,7 @@ class CommandCog(commands.Cog):
 
     @app_commands.command(name="top", description="Топ пользователей по времени в голосовых каналах")
     @app_commands.describe(field="Поле для сортировки (time, count)")
-    @app_commands.checks.cooldown(rate=1, per=30, key=lambda i: (i.user.id))
+    @app_commands.checks.cooldown(rate=1, per=5, key=lambda i: (i.user.id))
     async def top(self, interaction: discord.Interaction, field: str|None=None) -> None:
         try:
             guild_id = interaction.guild.id
