@@ -1,11 +1,14 @@
 import datetime
 import discord
+import asyncio
+
 from discord import app_commands
 from discord.ext import commands
 
 from models.models import Session, VoiceTime
-from utils.nick import change_nickname
+from utils.nick import change_nickname, get_base_mult
 from utils.decorators import in_allowed_channels
+from utils.constants import RARITY_STYLES
 
 
 class CommandCog(commands.Cog):
@@ -16,20 +19,25 @@ class CommandCog(commands.Cog):
     # randomly change nickname
     @app_commands.command(name="snoop", description="Случайным образом меняет никнейм")
     @app_commands.describe(target="Имя пользователя(через @ или никнейм)")
+    @app_commands.checks.cooldown(rate=1, per=5, key=lambda i: (i.user.id))
     # @in_allowed_channels(1354784115613761606)
     async def snoop(self, interaction: discord.Interaction, target: str|None=None) -> None:
-        member = await self.__get_user_from_mention(interaction, target)
-        if member is None: return
-        nickname, rarity  = await change_nickname(member)
-        await interaction.response.send_message(f"Ник пользователя {member} изменен на {nickname}\nРоль пользователя {member} изменена на {rarity}", ephemeral=True)
+        await interaction.response.defer(ephemeral=True)
         
+        member = await self._get_user_from_mention(interaction, target)
+        if member is None:
+            await interaction.followup.send("Пользователь не найден или указан неверно.", ephemeral=True)
+            return
         
+        asyncio.create_task(self._run_snoop_logic(interaction, member))
+        
+
     @app_commands.command(name="stats", description="Просмотр статистики")
     @app_commands.describe(target="Имя пользователя(через @ или никнейм)")
     async def stats(self, interaction: discord.Interaction, target: str|None=None) -> None:
-        member = await self.__get_user_from_mention(interaction, target)
+        member = await self._get_user_from_mention(interaction, target)
         if member is None: return
-
+        
         try:
             session = Session()
             user_id, guild_id = member.id, member.guild.id
@@ -38,12 +46,19 @@ class CommandCog(commands.Cog):
                 voice_entry = VoiceTime(user_id=user_id, guild_id=guild_id, total_time=0)
                 session.add(voice_entry)
                 session.commit()
-            total_time = round(voice_entry.total_time)
-            await interaction.response.send_message(f'Время пользователя {member.display_name} ({member}) в голосовых каналах: {total_time} мин.', ephemeral=True)
+                
+            hours_spent = round(voice_entry.total_time / 60, 2) if voice_entry.total_time else voice_entry.total_time
+            base_mult = get_base_mult(hours_spent)
+            
+            await interaction.response.send_message(
+                f'Время пользователя {member.display_name} ({member}) в голосовых каналах: {hours_spent} ч.\n'
+                f'Базовый коэффициент: {base_mult} (0.0001 за 1 час)'
+                , ephemeral=True)
         except:
             print('error while checking database.')
         finally:
             session.close()
+            
 
 
     @app_commands.command(name="top", description="Топ пользователей по времени в голосовых каналах")
@@ -58,10 +73,10 @@ class CommandCog(commands.Cog):
                 
                 message = "Топ пользователей по времени в голосовых каналах:\n"
                 for entry in voice_entry:
-                    time = round(entry.total_time)
+                    time_hours = round(entry.total_time / 60, 2) if entry.total_time else entry.total_time
                     display_name = members.get(entry.user_id, f"Неизвестный ({entry.user_id})")[0]
                     username = members.get(entry.user_id, f"Неизвестный ({entry.user_id})")[1]
-                    message += f'{display_name} {f"({username})" if username else ""}: {time} мин.\n'
+                    message += f'{display_name} {f"({username})" if username else ""}: {time_hours} ч.\n'
                 await interaction.response.send_message(message, ephemeral=True)
         except:
             print('error while checking database.')
@@ -104,20 +119,34 @@ class CommandCog(commands.Cog):
             print(f"Ошибка при очистке команд: {e}")
 
 
-    async def __get_user_from_mention(self, interaction: discord.Interaction, mention: str) -> discord.User:
+    async def _run_snoop_logic(self, interaction, member):
+        try:
+            nickname, rarity, base_mult = await change_nickname(member)
+
+            await interaction.followup.send(
+                f"🕵️ Ник пользователя {member} ({member.mention}) изменён на **{nickname}**\n"
+                f"🎖️ Роль изменена на {RARITY_STYLES.get(rarity, f'**{rarity}**')}\n"
+                f"🌟 Базовый коэффициент: **{base_mult}** (0.0001 за 1 час)",
+                ephemeral=True
+            )
+        except Exception as e:
+            print(f"[SNOOP ERROR] {e}")
+            await interaction.followup.send("Произошла ошибка при смене ника или роли.", ephemeral=True)
+
+
+    async def _get_user_from_mention(self, interaction: discord.Interaction, mention: str) -> discord.User:
         member = interaction.user
         if mention:
             try:
                 if mention=='@everyone' or mention=='@here':
-                    await interaction.response.send_message(f"ОШИБКА ШИНДОВС.", ephemeral=True)
                     return None
-                elif mention[0] == '<' or mention[-1] == '>':
+                elif mention.startswith('<') and mention.endswith('>'):
                     target_id = int(mention[2:-1])
                     member = discord.utils.get(interaction.guild.members, id=target_id)
                 else:
                     member = discord.utils.get(interaction.guild.members, name=mention)
             except:
-                await interaction.response.send_message(f"Пользователь {mention} не найден. Или формат неверный.", ephemeral=True)
+                return None
         return member
 
 

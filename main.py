@@ -8,7 +8,6 @@ from cogs.commands import update_voice_stats
 # Замените на свой токен
 load_dotenv()
 TOKEN = os.getenv('discord_token')
-print(TOKEN)
 
 
 intents = discord.Intents.all()
@@ -50,7 +49,14 @@ async def on_ready():
     
 @bot.tree.error
 async def on_app_command_error(interaction: discord.Interaction, error):
-    if isinstance(error, discord.app_commands.CheckFailure):
+    if isinstance(error, discord.app_commands.CommandOnCooldown):
+        retry_after = round(error.retry_after)
+        await interaction.response.send_message(
+            f"⏳ Подожди {retry_after} секунд перед повторным использованием команды!",
+            ephemeral=True
+        )
+
+    elif isinstance(error, discord.app_commands.CheckFailure):
         await interaction.response.send_message(
             "Вы не можете использовать эту команду в этом канале.",
             ephemeral=True

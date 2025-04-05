@@ -1,10 +1,141 @@
-RARITY_STYLES = {
-    "обычный": " ⚪ **Обычный**",
-    "необычный": "🟢 **Необычный**",
-    "редкий": "🔵 **Редкий**",
-    "эпический": "🟣 **Эпический**",
-    "легендарный": "🟡 **Легендарный**"
+from random import choice as random_choice
+from typing import Tuple
+from random import uniform as random_uniform
+
+
+common_mult = 1.2
+uncommon_mult = 7.6
+rare_mult = 19.8
+epic_mult = 917
+legendary_mult = 3846
+
+base_mult = 0.01
+# 0.1 1000 hours
+# 0.01 100 hours
+# 0.01 100 hours
+# 0.001 10 hours increasing ~x3 the chance
+# 0.0005 5 hours
+# 0.0001 1 hour
+pool_size_increase = 50*(base_mult*500) # +50 for 20 hours
+pool_size = min(int(50 + pool_size_increase), 850) # stop on 160th hour
+print(pool_size)
+ 
+RARITY_WEIGHTS = {
+    'обычный': 1+(common_mult*0.1*base_mult),
+    'необычный': 1+(uncommon_mult*0.2*base_mult),
+    'редкий': 1+(rare_mult*0.4*base_mult),
+    'эпический': 1+(epic_mult*1.2*base_mult),
+    'легендарный': 1+(legendary_mult*1.8*base_mult),
 }
+
+
+def get_weighted_name(pool_size=50):
+    """Генерирует пул ников, выбирает один с учётом редкости и веса."""
+    name_pool = []
+
+    for _ in range(pool_size):
+        nickname = get_random_name()
+        rarity = check_rarity(nickname)
+        weight = RARITY_WEIGHTS.get(rarity, 1)
+        name_pool.append((nickname, rarity, weight))
+
+    total_weight = sum(w for _, _, w in name_pool)
+    rnd = random_uniform(0, total_weight)
+    upto = 0
+    for name, rarity, weight in name_pool:
+        if upto + weight >= rnd:
+            return name, rarity
+        upto += weight
+
+    return name_pool[-1][:2]  # fallback
+
+
+count = {}
+def start():
+    for i in range(10000):
+        nickname, rarity = change_nickname()
+        count[rarity] = count.get(rarity, 0) + 1
+    print(count)
+
+
+
+
+def change_nickname():
+    nickname, rarity = get_weighted_name(pool_size=pool_size)
+    
+    return nickname, rarity
+
+
+
+
+def get_random_name():
+    return random_choice(RU_FIRST_NAMES) + ' ' + random_choice(RU_LAST_NAMES)
+
+
+
+
+
+
+def split_name(full_name: str) -> Tuple[str, str]:
+    """Разделяет полное имя на имя и фамилию."""
+    parts = full_name.split()
+    return (parts[0], parts[1]) if len(parts) == 2 else ("", "")
+
+def is_legendary(full_name: str) -> bool:
+    """Проверяет, является ли имя легендарным (в списке)."""
+    return full_name in RU_LEGENDARY_NAMES
+
+def is_epic(full_name: str) -> bool:
+    """Проверяет, является ли имя эпическим (сравнение последних букв)."""
+    """Эпическое, если последние 3 буквы имени и фамилии совпадают."""
+    first_name, second_name = split_name(full_name)
+
+    if not first_name or not second_name:
+        return False
+
+    # Проверяем условия
+    if len(first_name) < 3 or len(second_name) < 3 or abs(len(first_name) - len(second_name)) > 3:
+        return False
+    first_sub = first_name[-3:]
+    second_sub = second_name[-3:]
+    return first_sub == second_sub
+
+def is_rare(full_name: str) -> bool:
+    """Проверяет, является ли имя редким (первая буква совпадает)."""
+    first_name, second_name = split_name(full_name)
+    return first_name and second_name and first_name[0].lower() == second_name[0].lower()
+
+def is_uncommon(full_name: str) -> bool:
+    """Проверяет, является ли имя необычным (длина имени = длине фамилии)."""
+    first_name, second_name = split_name(full_name)
+    return first_name and second_name and len(first_name) == len(second_name)
+
+
+def check_rarity(full_name):
+    if is_legendary(full_name):
+        return ROLES[4]
+    elif is_epic(full_name):
+        return ROLES[3]
+    elif is_rare(full_name):
+        return ROLES[2]
+    elif is_uncommon(full_name):
+        return ROLES[1]
+    return ROLES[0]
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 ROLES = ['обычный', 'необычный', 'редкий', 'эпический', 'легендарный', 'анти-легендарный']
 
@@ -331,3 +462,11 @@ EN_LEGENDARY_NAMES = [
     'Lekha Lepekha', 'Zhan Kozhan', 'Klim Sanych', 'Seryoga Pirat', 'Anatoly Chubais', 'Nikita Bishkek',
     'Jacques Jacket'
 ]
+
+
+
+
+
+
+
+start()
