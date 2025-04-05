@@ -12,7 +12,8 @@ class VoiceTime(Base):
     guild_id = Column(Integer, primary_key=True)
     total_time = Column(Float, default=0)  # Общее время в минутах
     last_join = Column(DateTime, nullable=True)  # Последний вход в голосовой
-    money = Column(Integer, default=0)
+    snoop_counter = Column(Integer, default=0)
+    
 
 # Подключение к SQLite
 engine = create_engine("sqlite:///models/database.db")

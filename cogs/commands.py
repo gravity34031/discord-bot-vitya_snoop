@@ -47,12 +47,18 @@ class CommandCog(commands.Cog):
                 voice_entry = VoiceTime(user_id=user_id, guild_id=guild_id, total_time=0)
                 session.add(voice_entry)
                 session.commit()
+            if voice_entry.snoop_counter is None:
+                voice_entry.snoop_counter = 0
+                session.add(voice_entry)
+                session.commit()
+            snoop_counter = voice_entry.snoop_counter
                 
             hours_spent = round(voice_entry.total_time / 60, 2) if voice_entry.total_time else voice_entry.total_time
             base_mult = get_base_mult(hours_spent)
             
             await interaction.response.send_message(
                 f'Время пользователя {member.display_name} ({member}) в голосовых каналах: {hours_spent} ч.\n'
+                f'Попыток сменить ник: {snoop_counter}\n'
                 f'Базовый коэффициент: {base_mult} (0.0001 за 1 час)'
                 , ephemeral=True)
         except:
@@ -63,22 +69,41 @@ class CommandCog(commands.Cog):
 
 
     @app_commands.command(name="top", description="Топ пользователей по времени в голосовых каналах")
+    @app_commands.describe(field="Поле для сортировки (time, count)")
     @app_commands.checks.cooldown(rate=1, per=30, key=lambda i: (i.user.id))
-    async def top(self, interaction: discord.Interaction) -> None:
+    async def top(self, interaction: discord.Interaction, field: str|None=None) -> None:
         try:
             guild_id = interaction.guild.id
             session = Session()
-            voice_entry = session.query(VoiceTime).filter_by(guild_id=guild_id).order_by(VoiceTime.total_time.desc()).limit(10).all()
+            if field == 'count':
+                voice_entry = session.query(VoiceTime).filter_by(guild_id=guild_id).order_by(VoiceTime.snoop_counter.desc()).limit(10).all()
+                message = f"Топ {len(voice_entry)} пользователей по количеству смен ников:\n"
+                is_counter = True
+            else:
+                voice_entry = session.query(VoiceTime).filter_by(guild_id=guild_id).order_by(VoiceTime.total_time.desc()).limit(10).all()
+                message = f"Топ {len(voice_entry)} пользователей по времени в голосовых каналах:\n"
+                is_counter = False
+                
             if voice_entry is not None:
                 guild = interaction.guild  # Получаем объект сервера
-                members = {member.id: (member.display_name, member) for member in guild.members}  # Создаем словарь {id: ник}
+                members = {member.id: (member.mention, member) for member in guild.members}  # Создаем словарь {id: ник}
                 
-                message = "Топ пользователей по времени в голосовых каналах:\n"
+                indx=1
                 for entry in voice_entry:
                     time_hours = round(entry.total_time / 60, 2) if entry.total_time else entry.total_time
+                    if entry.snoop_counter is None:
+                        entry.snoop_counter = 0
+                        session.add(voice_entry)
+                        session.commit()
+                    snoop_counter = entry.snoop_counter
+                    
                     display_name = members.get(entry.user_id, f"Неизвестный ({entry.user_id})")[0]
                     username = members.get(entry.user_id, f"Неизвестный ({entry.user_id})")[1]
-                    message += f'{display_name} {f"({username})" if username else ""}: {time_hours} ч.\n'
+                    if is_counter:
+                        message += f'{indx}) {display_name} {f"({username})" if username else ""}: Смен ника: **{snoop_counter}** | **{time_hours} ч.**\n'
+                    else:
+                        message += f'{indx}) {display_name} {f"({username})" if username else ""}: **{time_hours} ч.** | Смен ника: **{snoop_counter}**\n'
+                    indx += 1
                 await interaction.response.send_message(message, ephemeral=True)
         except:
             print('error while checking database.')
@@ -126,6 +151,7 @@ class CommandCog(commands.Cog):
     async def _run_snoop_logic(self, interaction, member):
         try:
             nickname, rarity, base_mult = await change_nickname(member)
+            await self._increase_counter(member)
 
             await interaction.followup.send(
                 f"🕵️ Ник пользователя {member} ({member.mention}) изменён на **{nickname}**\n"
@@ -137,7 +163,23 @@ class CommandCog(commands.Cog):
             print(f"[SNOOP ERROR] {e}")
             await interaction.followup.send("Произошла ошибка при смене ника или роли.", ephemeral=True)
 
-
+    async def _increase_counter(self, member):
+        try:
+            session = Session()
+            user_id, guild_id = member.id, member.guild.id
+            voice_entry = session.query(VoiceTime).filter_by(user_id=user_id, guild_id=guild_id).first()
+            if voice_entry is None:
+                voice_entry = VoiceTime(user_id=user_id, guild_id=guild_id, total_time=0)
+                session.add(voice_entry)
+            if voice_entry.snoop_counter is None:
+                voice_entry.snoop_counter = 0
+            voice_entry.snoop_counter += 1
+        except:
+            print('error while increasing snoop_counter in database.')
+        finally:
+            session.commit()
+            session.close()
+    
     async def _get_user_from_mention(self, interaction: discord.Interaction, mention: str) -> discord.User:
         member = interaction.user
         if mention:
