@@ -156,7 +156,7 @@ class NicknameManager:
             print("Using old legendary names list")
             return full_name in RU_LEGENDARY_NAMES
         # use db
-        return full_name in RU_LEGENDARY_NAMES
+        return full_name in legendary_names
 
     def is_epic(self, full_name: str) -> bool:
         """Проверяет, является ли имя эпическим (сравнение последних букв)."""
