@@ -157,12 +157,37 @@ class CommandCog(commands.Cog):
         finally:
             session.close()
             
-        initials_list = [i.value for i in result]
-        message = f'Инициалы:\n{initials_list if initials_list else "Пусто"}'
+        initials_list = [i.value for i in sorted(result, key=lambda i: i.value)]
+        if not initials_list:
+            message = 'Список пуст.'
+            if not interaction.response.is_done():
+                await interaction.response.send_message(message, ephemeral=True)
+            else:
+                await interaction.followup.send(message, ephemeral=True)
+            return
+        
+        
+        full_text = ', '.join(initials_list)
+
+        # Делим на части по 2000 символов
+        chunks = []
+        while len(full_text) > 2000:
+            split_index = full_text.rfind(', ', 0, 2000)
+            if split_index == -1:
+                split_index = 2000  # если запятую не нашёл
+            chunks.append(full_text[:split_index])
+            full_text = full_text[split_index + 2:]  # пропускаем запятую и пробел
+        if full_text:
+            chunks.append(full_text)
+
+        # Отправляем по частям
         if not interaction.response.is_done():
-            await interaction.response.send_message(message, ephemeral=True)
-        else:
-            await interaction.followup.send(message, ephemeral=True)
+            await interaction.response.send_message(chunks[0], ephemeral=True)
+            chunks = chunks[1:]
+        for chunk in chunks:
+            await interaction.followup.send(chunk, ephemeral=True)
+            
+        
                 
                 
     @app_commands.command(name="delete_initial", description="Удаляет инициалы value из базы данных")
