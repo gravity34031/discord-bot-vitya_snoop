@@ -1,4 +1,4 @@
-from sqlalchemy import create_engine, Column, Integer, Float, DateTime
+from sqlalchemy import create_engine, Column, Integer, Float, DateTime, String, SmallInteger
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
 import datetime
@@ -13,6 +13,14 @@ class VoiceTime(Base):
     total_time = Column(Float, default=0)  # Общее время в минутах
     last_join = Column(DateTime, nullable=True)  # Последний вход в голосовой
     snoop_counter = Column(Integer, default=0)
+    
+class Initials(Base):
+    __tablename__ = "initials"
+    
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    value = Column(String)
+    type = Column(SmallInteger) # 0 - first name, 1 - last name, 2 - legendary full name
+    gender = Column(SmallInteger) # 0 - male, 1 - female, 2 - other
     
 
 # Подключение к SQLite

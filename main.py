@@ -3,7 +3,11 @@ import os
 from dotenv import load_dotenv
 from discord.ext import commands
 
+from cogs.events import EventCog
+from cogs.commands import CommandCog
 from cogs.commands import update_voice_stats
+from utils.name_cache_manager import NameCacheManager
+from utils.nick import NicknameManager
 
 # Замените на свой токен
 load_dotenv()
@@ -15,6 +19,8 @@ intents.message_content = True
 intents.voice_states = True
 intents.guilds = True
 intents.members = True
+intents.messages = True
+intents.reactions = True
 guild = discord.Object(id="1349770230674755684")
 
 bot = commands.Bot(command_prefix='!', intents=intents)
@@ -35,8 +41,12 @@ async def load_cogs():
 
 @bot.event
 async def on_ready():
+    bot.cache_manager = NameCacheManager()
+    bot.nickname_manager = NicknameManager(bot, bot.cache_manager)
+    await bot.cache_manager.load_caches()
     await load_cogs()
     print(f'Бот {bot.user.name} запущен!')
+    
     try:
         await bot.tree.sync()
         print("Слаши-команды синхронизированы.")
@@ -63,7 +73,10 @@ async def on_app_command_error(interaction: discord.Interaction, error):
         )
     else:
         await interaction.response.send_message("Произошла ошибка.", ephemeral=True)
+
     
 
 bot.run(TOKEN)
+
+
 

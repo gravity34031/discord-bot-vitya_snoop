@@ -18,7 +18,6 @@ base_mult = 0.01
 # 0.0001 1 hour
 pool_size_increase = 50*(base_mult*500) # +50 for 20 hours
 pool_size = min(int(50 + pool_size_increase), 850) # stop on 160th hour
-print(pool_size)
  
 RARITY_WEIGHTS = {
     'обычный': 1+(common_mult*0.1*base_mult),
@@ -55,7 +54,6 @@ def start():
     for i in range(10000):
         nickname, rarity = change_nickname()
         count[rarity] = count.get(rarity, 0) + 1
-    print(count)
 
 
 
@@ -301,7 +299,6 @@ RU_LEGENDARY_NAMES = [
     'Леха Лепёха', 'Жан Кожан', 'Клим Саныч', 'Серега Пират', 'Анатолий Чубайс', 'Никита Бишкек',
     'Жак Пиджак'
 ]
-print(len(RU_LEGENDARY_NAMES))
 EN_FIRST_NAMES = [
     'Christopher', 'Ilya', 'Senya', 'Zheka', 'Toha',
     'Oleg', 'Konstantin', 'Andrei', 'Artyom', 'Nikita',
@@ -469,4 +466,15 @@ EN_LEGENDARY_NAMES = [
 
 
 
-start()
+# start()
+
+
+
+
+
+
+
+
+
+l = "['Работник', 'Программист', 'Тридемакс', 'Дотер', 'Тиктокер', 'Ястреб', 'Ненаркоторговец', 'Очко']"
+print(l.replace("'", "").replace("[", "").replace("]", "").replace(",", ""))

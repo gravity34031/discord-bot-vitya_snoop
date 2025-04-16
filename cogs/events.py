@@ -3,12 +3,18 @@ from discord.ext import commands
 import datetime
 
 from models.models import Session, VoiceTime
-from utils.nick import change_nickname
+from utils.decorators import in_allowed_channels
 
 
 class EventCog(commands.Cog):
-    def __init__(self, bot):
+    def __init__(self, bot, cache_manager, nickname_manager):
         self.bot = bot
+        self.cache_manager = cache_manager
+        
+        self.nickname_manager = nickname_manager
+        self.change_nickname = nickname_manager.change_nickname
+        
+        self.suggestion_channels = {'firstname': 1355601355644866721, 'secondname': 1355601431700443467, 'legendary': 1356006322356752568}
         
         
     @commands.Cog.listener()
@@ -46,7 +52,7 @@ class EventCog(commands.Cog):
         # if before.channel is None and after.channel is not None:
         channel_id = 1354805999277445291
         if after.channel is not None and after.channel.id==channel_id and before.channel!=channel_id:
-            await change_nickname(member)
+            await self.change_nickname(member)
             await member.move_to(before.channel)
 
 
@@ -56,10 +62,60 @@ class EventCog(commands.Cog):
             await message.add_reaction('💩')
             
         await self.bot.process_commands(message)
+      
+        
+    @commands.Cog.listener()
+    async def on_raw_reaction_add(self, payload: discord.RawReactionActionEvent):
+        valid_channels = [self.suggestion_channels['firstname'], self.suggestion_channels['secondname'], self.suggestion_channels['legendary']]
+
+        # ignore not valid channels
+        if payload.channel_id not in valid_channels:
+            return
+
+        guild = self.bot.get_guild(payload.guild_id)
+        user = guild.get_member(payload.user_id)
+        if user.bot:
+            return  # ignore bots reactions
+
+        channel = self.bot.get_channel(payload.channel_id)
+        message = await channel.fetch_message(payload.message_id)
+
+        if user.name in ['gravity9525', 'mollenq', 'executus'] and payload.emoji.name == '❤️':
+            await message.add_reaction('✅')
+            allowed_emojis = {'✅', '❤️'}
+            await self._add_initials(message.content, payload.channel_id)
+        else:
+            await message.add_reaction('❌')
+            allowed_emojis = {'❌'}     
+
+        # remove other reactions
+        for reaction in message.reactions:
+            if str(reaction.emoji) not in allowed_emojis:
+                await message.clear_reaction(reaction.emoji)
+    
+    
+    async def _add_initials(self, message, channel_id):
+        type_id = -1
+        if channel_id == self.suggestion_channels['firstname']:
+            type_id = 0
+        elif channel_id == self.suggestion_channels['secondname']:
+            type_id = 1
+        elif channel_id == self.suggestion_channels['legendary']:
+            type_id = 2
+        if type_id == -1: return
+        
+        if type_id in (0, 1):
+            message_prettyfied = message.replace("'", "").replace("[", "").replace("]", "").replace("\n", " ").replace("\t", " ").replace(",", "")
+            for word in message_prettyfied.split(' '):
+                await self.cache_manager.add_name(word.capitalize().strip(), type_id)
+        else:
+            message_prettyfied = message.replace("'", "").replace("[", "").replace("]", "").replace("\n", " ").replace("\t", " ")
+            for words in message_prettyfied.split(','):
+                await self.cache_manager.add_name(' '.join(words.split()[:2]).title().strip(), type_id)
         
     
 
         
         
 async def setup(bot):
-    await bot.add_cog(EventCog(bot))
+    await bot.add_cog(EventCog(bot, bot.cache_manager, bot.nickname_manager))

@@ -5,15 +5,19 @@ import asyncio
 from discord import app_commands
 from discord.ext import commands
 
-from models.models import Session, VoiceTime
-from utils.nick import change_nickname, get_base_mult
+from models.models import Session, VoiceTime, Initials
 from utils.decorators import in_allowed_channels
 from utils.constants import RARITY_STYLES
 
 
 class CommandCog(commands.Cog):
-    def __init__(self, bot):
+    def __init__(self, bot, cache_manager, nickname_manager):
         self.bot = bot
+        self.cache_manager = cache_manager
+        
+        self.nickname_manager = nickname_manager
+        self.change_nickname = nickname_manager.change_nickname
+        self.get_base_mult = nickname_manager.get_base_mult
 
 
     # randomly change nickname
@@ -54,8 +58,8 @@ class CommandCog(commands.Cog):
             snoop_counter = voice_entry.snoop_counter
                 
             hours_spent = round(voice_entry.total_time / 60, 2) if voice_entry.total_time else voice_entry.total_time
-            base_mult = get_base_mult(hours_spent)
-            
+            base_mult = self.get_base_mult(hours_spent)
+
             await interaction.response.send_message(
                 f'Время пользователя {member.display_name} ({member}) в голосовых каналах: {hours_spent} ч.\n'
                 f'Попыток сменить ник: {snoop_counter}\n'
@@ -128,6 +132,48 @@ class CommandCog(commands.Cog):
             if channel.name == name:
                 wanted_channel_id = channel.id
         await interaction.response.send_message(f'ID канала {name}: {wanted_channel_id}', ephemeral=True) # this is just to check 
+        
+    
+
+    @app_commands.command(name="get_initials", description="Get all initials from database")
+    @app_commands.describe(type="0 - first name, 1 - last name, 2 - legendary name")
+    @app_commands.checks.cooldown(rate=1, per=3, key=lambda i: (i.user.id))
+    async def get_initials(self, interaction: discord.Interaction, type: int) -> None:
+        try:
+            session = Session()
+            result = None
+            if type == 0:
+                result = session.query(Initials).filter_by(type=0).all()
+            elif type == 1:
+                result = session.query(Initials).filter_by(type=1).all()
+            elif type == 2:
+                result = session.query(Initials).filter_by(type=2).all()
+            else:
+                await interaction.response.send_message(f'Неверный тип.', ephemeral=True)
+        except:
+            print('error while checking initials database.')
+            await interaction.response.send_message(f'Произошла ошибка.', ephemeral=True)
+        finally:
+            session.close()
+            if result is not None:
+                await interaction.response.send_message(f'Инициалы:\n{[i.value for i in result]}', ephemeral=True)
+                
+                
+    @app_commands.command(name="delete_initial", description="Удаляет инициалы value из базы данных")
+    @app_commands.describe(value="Инициал. Можно списком, разделенным пробелами. Легенды разделяются запятыми")
+    @app_commands.describe(type="0 - first name, 1 - last name, 2 - legendary name")
+    @app_commands.checks.cooldown(rate=1, per=1, key=lambda i: (i.user.id))
+    async def delete_initial(self, interaction: discord.Interaction, value: str, type: int) -> None:
+        try:
+            if type in (0, 1):
+                for item in value.split(' '):
+                    self.cache_manager.delete_initial(item, type)
+            if type == 2:
+                for item in value.split(','):
+                    self.cache_manager.delete_initial(value, type)
+            await interaction.response.send_message(f'Инициалы {value} успешно удалены.', ephemeral=True)
+        except:
+            await interaction.response.send_message(f'Произошла ошибка.', ephemeral=True)
 
 
     # clear commands cache and sync
@@ -150,7 +196,7 @@ class CommandCog(commands.Cog):
 
     async def _run_snoop_logic(self, interaction, member):
         try:
-            nickname, rarity, base_mult = await change_nickname(member)
+            nickname, rarity, base_mult = await self.change_nickname(member)
             await self._increase_counter(member)
 
             await interaction.followup.send(
@@ -194,12 +240,8 @@ class CommandCog(commands.Cog):
             except:
                 return None
         return member
-
-
-async def setup(bot):
-    await bot.add_cog(CommandCog(bot))
     
-    
+
 
 def update_voice_stats(bot):
     session = Session()
@@ -246,3 +288,8 @@ def update_voice_stats(bot):
     finally:
         session.commit()
         session.close()
+        
+        
+        
+async def setup(bot):
+    await bot.add_cog(CommandCog(bot, bot.cache_manager, bot.nickname_manager))
