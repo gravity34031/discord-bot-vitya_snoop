@@ -142,21 +142,27 @@ class CommandCog(commands.Cog):
         try:
             session = Session()
             result = None
-            if type == 0:
-                result = session.query(Initials).filter_by(type=0).all()
-            elif type == 1:
-                result = session.query(Initials).filter_by(type=1).all()
-            elif type == 2:
-                result = session.query(Initials).filter_by(type=2).all()
+            if type in (0, 1, 2):
+                result = session.query(Initials).filter_by(type=type).all()
             else:
                 await interaction.response.send_message(f'Неверный тип.', ephemeral=True)
-        except:
-            print('error while checking initials database.')
-            await interaction.response.send_message(f'Произошла ошибка.', ephemeral=True)
+                return
+        except Exception as e:
+            print(f'Error while checking initials database: {e}')
+            if not interaction.response.is_done():
+                await interaction.response.send_message(f'Произошла ошибка.', ephemeral=True)
+            else:
+                await interaction.followup.send(f'Произошла ошибка.', ephemeral=True)
+            return
         finally:
             session.close()
-            if result is not None:
-                await interaction.response.send_message(f'Инициалы:\n{[i.value for i in result]}', ephemeral=True)
+            
+        initials_list = [i.value for i in result]
+        message = f'Инициалы:\n{initials_list if initials_list else "Пусто"}'
+        if not interaction.response.is_done():
+            await interaction.response.send_message(message, ephemeral=True)
+        else:
+            await interaction.followup.send(message, ephemeral=True)
                 
                 
     @app_commands.command(name="delete_initial", description="Удаляет инициалы value из базы данных")
