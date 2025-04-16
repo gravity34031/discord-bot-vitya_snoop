@@ -111,7 +111,12 @@ class EventCog(commands.Cog):
         else:
             message_prettyfied = message.replace("'", "").replace("[", "").replace("]", "").replace("\n", " ").replace("\t", " ")
             for words in message_prettyfied.split(','):
-                await self.cache_manager.add_name(' '.join(words.split()[:2]).title().strip(), type_id)
+                legend = ' '.join(words.split()[:2]).title().strip()
+                if len(legend()<2): continue
+                
+                await self.cache_manager.add_name(legend, type_id) # add legend
+                await self.cache_manager.add_name(legend[0], 0) # add firstname
+                await self.cache_manager.add_name(legend[1], 1) # add lastname
         
     
 
