@@ -7,11 +7,12 @@ from utils.decorators import in_allowed_channels
 
 
 class EventCog(commands.Cog):
-    def __init__(self, bot, cache_manager, nickname_manager):
+    def __init__(self, bot, cache_manager, nickname_manager, model_view):
         self.bot = bot
         self.cache_manager = cache_manager
-        
         self.nickname_manager = nickname_manager
+        self.model_view = model_view
+        
         self.change_nickname = nickname_manager.change_nickname
         
         self.suggestion_channels = {'firstname': 1355601355644866721, 'secondname': 1355601431700443467, 'legendary': 1356006322356752568}
@@ -54,6 +55,8 @@ class EventCog(commands.Cog):
         if after.channel is not None and after.channel.id==channel_id and before.channel!=channel_id:
             await self.change_nickname(member)
             await member.move_to(before.channel)
+            self.model_view.increase_counter(member)
+
 
 
     @commands.Cog.listener()
@@ -130,4 +133,4 @@ class EventCog(commands.Cog):
         
         
 async def setup(bot):
-    await bot.add_cog(EventCog(bot, bot.cache_manager, bot.nickname_manager))
+    await bot.add_cog(EventCog(bot, bot.cache_manager, bot.nickname_manager, bot.model_view))

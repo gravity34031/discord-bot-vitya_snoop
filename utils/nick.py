@@ -43,7 +43,7 @@ class NicknameManager:
 
     def get_weighted_name(self, base_pool_size=50, hours_spent=0):
         """Генерирует пул ников, выбирает один с учётом редкости и веса."""
-        base_mult = self.get_base_mult(hours_spent, base_pool_size)
+        base_mult = self.get_base_mult(hours_spent)
         pool_size_increase = base_pool_size*(base_mult*500) # +50 for 20 hours
         pool_size = min(int(base_pool_size + pool_size_increase), 850) # stop on 160th hour
         
@@ -104,7 +104,7 @@ class NicknameManager:
         return hours_spent
 
 
-    def get_base_mult(self, hours_spent=0, base_pool_size=50):
+    def get_base_mult(self, hours_spent=0):
         # 0.1 1000 hours
         # 0.01 100 hours
         # 0.01 100 hours
