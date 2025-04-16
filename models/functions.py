@@ -27,6 +27,7 @@ class ModelView:
             
             
     def update_voice_stats(self, bot):
+        print("Обновление голосовых данных после перезапуска...")
         session = Session()
         try:
             now = datetime.datetime.now()
@@ -45,7 +46,7 @@ class ModelView:
 
                         voice_entry = session.query(VoiceTime).filter_by(user_id=user_id, guild_id=guild_id).first()
                         if voice_entry:
-                            print(f"{member.display_name} уже в голосовом чате ({vc.name}).")
+                            print(f"\t{member.display_name} уже в голосовом чате ({vc.name}).")
                         else:
                             # Если записи нет, создаем новую
                             voice_entry = VoiceTime(user_id=user_id, guild_id=guild_id, last_join=now, total_time=0)

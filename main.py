@@ -40,7 +40,7 @@ async def on_ready():
         await bot.tree.sync()
         print("\nСлаши-команды синхронизированы.")
         for command in bot.tree.get_commands():
-            print(f"Зарегистрирована команда: {command.name}")
+            print(f"\tЗарегистрирована команда: {command.name}")
     except Exception as e:
         print(f"Ошибка при синхронизации: {e}")
     print()
