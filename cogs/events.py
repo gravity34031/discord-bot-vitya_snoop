@@ -115,8 +115,8 @@ class EventCog(commands.Cog):
                 if len(legend)<2: continue
                 
                 await self.cache_manager.add_name(legend, type_id) # add legend
-                await self.cache_manager.add_name(legend[0], 0) # add firstname
-                await self.cache_manager.add_name(legend[1], 1) # add lastname
+                await self.cache_manager.add_name(legend.split()[0].capitalize(), 0) # add firstname
+                await self.cache_manager.add_name(legend.split()[1].capitalize(), 1) # add lastname
         
     
 
