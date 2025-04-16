@@ -80,24 +80,25 @@ class EventCog(commands.Cog):
         channel = self.bot.get_channel(payload.channel_id)
         message = await channel.fetch_message(payload.message_id)
 
-        if user.name in ['gravity9525', 'mollenq', 'executus'] and payload.emoji.name == '❤️':
-            try:
-                await message.add_reaction('✅')
-            except discord.Forbidden:
-                print(f"[WARNING] Бот не может добавить реакцию ✅ на сообщение пользователя {user.name}")
-            allowed_emojis = {'✅', '❤️'}
-            await self._add_initials(message.content, payload.channel_id)
-        else:
-            try:
-                await message.add_reaction('❌')
-            except discord.Forbidden:
-                print(f"[WARNING] Бот не может добавить реакцию ❌ на сообщение пользователя {user.name}")
-            allowed_emojis = {'❌'}     
+        if user.name in ['gravity9525', 'mollenq', 'executus'] :
+            if payload.emoji.name == '❤️':
+                try:
+                    await message.add_reaction('✅')
+                except discord.Forbidden:
+                    print(f"[WARNING] Бот не может добавить реакцию ✅ на сообщение пользователя {user.name}")
+                allowed_emojis = {'✅', '❤️'}
+                await self._add_initials(message.content, payload.channel_id)
+            else:
+                try:
+                    await message.add_reaction('❌')
+                except discord.Forbidden:
+                    print(f"[WARNING] Бот не может добавить реакцию ❌ на сообщение пользователя {user.name}")
+                allowed_emojis = {'❌'}     
 
-        # remove other reactions
-        for reaction in message.reactions:
-            if str(reaction.emoji) not in allowed_emojis:
-                await message.clear_reaction(reaction.emoji)
+            # remove other reactions
+            for reaction in message.reactions:
+                if str(reaction.emoji) not in allowed_emojis:
+                    await message.clear_reaction(reaction.emoji)
     
     
     async def _add_initials(self, message, channel_id):
