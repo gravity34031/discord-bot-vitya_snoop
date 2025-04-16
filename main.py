@@ -38,13 +38,15 @@ async def on_ready():
     print(f'Бот {bot.user.name} запущен!')
     try:
         await bot.tree.sync()
-        print("Слаши-команды синхронизированы.")
+        print("\nСлаши-команды синхронизированы.")
         for command in bot.tree.get_commands():
             print(f"Зарегистрирована команда: {command.name}")
     except Exception as e:
         print(f"Ошибка при синхронизации: {e}")
+    print()
 
     bot.model_view.update_voice_stats(bot)
+    print()
     
    
     
