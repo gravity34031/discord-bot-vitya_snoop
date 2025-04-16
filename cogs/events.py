@@ -81,11 +81,17 @@ class EventCog(commands.Cog):
         message = await channel.fetch_message(payload.message_id)
 
         if user.name in ['gravity9525', 'mollenq', 'executus'] and payload.emoji.name == '❤️':
-            await message.add_reaction('✅')
+            try:
+                await message.add_reaction('✅')
+            except discord.Forbidden:
+                print(f"[WARNING] Бот не может добавить реакцию ✅ на сообщение пользователя {user.name}")
             allowed_emojis = {'✅', '❤️'}
             await self._add_initials(message.content, payload.channel_id)
         else:
-            await message.add_reaction('❌')
+            try:
+                await message.add_reaction('❌')
+            except discord.Forbidden:
+                print(f"[WARNING] Бот не может добавить реакцию ❌ на сообщение пользователя {user.name}")
             allowed_emojis = {'❌'}     
 
         # remove other reactions
