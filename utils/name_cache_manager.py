@@ -29,9 +29,9 @@ class NameCacheManager:
         session = Session()
         try:
             # add name if it is not exists consider lowercase and uppercase      
+            name = name.strip()
+            if not name or name=='' or name==' ': return
             if type == 0:
-                name = name.strip()
-                if not name or name=='' or name==' ': return
                 if name.lower() in [x.lower() for x in self.first_name_cache]: return
                 self.first_name_cache.append(name)
             elif type == 1:
