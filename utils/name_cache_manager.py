@@ -42,7 +42,7 @@ class NameCacheManager:
             new_name = Initials(value=name, type=type)
             session.add(new_name)
             session.commit()
-            print(f'Имя {name} типа {'first name' if type == 0 else 'last name' if type == 1 else 'legendary name'} добавлено в кэш и базу данных.')
+            print(f"Имя {name} типа {'first name' if type == 0 else 'last name' if type == 1 else 'legendary name'} добавлено в кэш и базу данных.")
         except:
             print('error while adding name to cache and database.')
         finally:
