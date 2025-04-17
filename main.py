@@ -5,11 +5,13 @@ from discord.ext import commands
 
 from utils.name_cache_manager import NameCacheManager
 from utils.nick import NicknameManager
+from utils.friday import Schedule
 from models.functions import ModelView
 
 # Замените на свой токен
 load_dotenv()
 TOKEN = os.getenv('discord_token')
+DEBUG = str(os.getenv('DEBUG')).capitalize() == "True"
 
 
 intents = discord.Intents.all()
@@ -29,10 +31,13 @@ bot = commands.Bot(command_prefix='!', intents=intents)
 
 @bot.event
 async def on_ready():
+    bot.debug = DEBUG
     bot.cache_manager = NameCacheManager()
     bot.nickname_manager = NicknameManager(bot, bot.cache_manager)
     bot.model_view = ModelView(bot)
     await bot.cache_manager.load_caches()
+    Schedule(bot, bot.debug, server_hour_offset=-5, day="fri", hour=10, minute=00).start()
+    
     await load_cogs()
     
     print(f'Бот {bot.user.name} запущен!')
@@ -83,7 +88,7 @@ async def on_app_command_error(interaction: discord.Interaction, error):
 
     
 
-bot.run(TOKEN)
 
 
-
+if __name__ == "__main__": 
+    bot.run(TOKEN)
