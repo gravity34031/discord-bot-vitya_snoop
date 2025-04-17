@@ -40,7 +40,7 @@ async def on_ready():
     
     await load_cogs()
     
-    print(f'Бот {bot.user.name} запущен! В {'тестовом' if DEBUG else 'боевом'} режиме')
+    print(f"Бот {bot.user.name} запущен! В {'тестовом' if DEBUG else 'боевом'} режиме")
     try:
         await bot.tree.sync()
         print("\nСлаши-команды синхронизированы.")
