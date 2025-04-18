@@ -1,4 +1,5 @@
 import datetime
+from collections import defaultdict
 import discord
 import asyncio
 
@@ -158,7 +159,7 @@ class CommandCog(commands.Cog):
         finally:
             session.close()
             
-        initials_list = [i.value for i in sorted(result, key=lambda i: i.value)]
+        initials_list = [i.value for i in result]
         if not initials_list:
             message = 'Список пуст.'
             if not interaction.response.is_done():
@@ -166,20 +167,34 @@ class CommandCog(commands.Cog):
             else:
                 await interaction.followup.send(message, ephemeral=True)
             return
-        
-        
-        full_text = ', '.join(initials_list)
 
-        # Делим на части по 2000 символов
+        # Группировка по первой букве
+        grouped = defaultdict(list)
+        for word in initials_list:
+            if not word:
+                continue
+            first_char = word[0].upper()
+            if 'А' <= first_char <= 'Я':
+                grouped[first_char].append(word)
+            else:
+                grouped['#'].append(word)  # для символов, цифр, латиницы и прочего
+
+        # Сортировка по алфавиту: А–Я, потом #
+        sorted_keys = sorted([k for k in grouped.keys() if k != '#']) + (['#'] if '#' in grouped else [])
+
+        # Формируем текст
         chunks = []
-        while len(full_text) > 2000:
-            split_index = full_text.rfind(', ', 0, 2000)
-            if split_index == -1:
-                split_index = 2000  # если запятую не нашёл
-            chunks.append(full_text[:split_index])
-            full_text = full_text[split_index + 2:]  # пропускаем запятую и пробел
-        if full_text:
-            chunks.append(full_text)
+        current_chunk = ''
+        for letter in sorted_keys:
+            block = f"**{letter})** {', '.join(sorted(grouped[letter], key=lambda x: x.lower()))}\n"
+            if len(current_chunk) + len(block) > 2000:
+                chunks.append(current_chunk)
+                current_chunk = block
+            else:
+                current_chunk += block
+
+        if current_chunk:
+            chunks.append(current_chunk)
 
         # Отправляем по частям
         if not interaction.response.is_done():
