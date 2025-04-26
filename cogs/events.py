@@ -62,7 +62,7 @@ class EventCog(commands.Cog):
     @commands.Cog.listener()
     async def on_message(self, message):
         if message.author.name == 'mollenq':
-            await message.add_reaction('💩')
+            await message.add_reaction('🍑')
             
         await self.bot.process_commands(message)
       
