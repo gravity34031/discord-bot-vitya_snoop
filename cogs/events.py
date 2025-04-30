@@ -1,4 +1,5 @@
 import discord
+import asyncio
 from discord.ext import commands
 import datetime
 
@@ -48,6 +49,27 @@ class EventCog(commands.Cog):
             finally:
                 session.commit()
                 session.close()
+
+        # play mitin welcome
+        if member.name == 'gravity9525' and after.channel and before.channel == None:
+            voice_channel = after.channel
+            if not member.guild.voice_client:  # если бот не подключён
+                vc = await voice_channel.connect()
+            else:
+                vc = member.guild.voice_client
+            await vc.move_to(voice_channel)
+
+            if vc.is_connected():
+                audio_source = discord.FFmpegPCMAudio("media/mitin.mp3")
+                if not vc.is_playing():
+                    vc.play(audio_source)
+                    while vc.is_playing():
+                        await asyncio.sleep(1)
+                    await vc.disconnect()
+                else:
+                    print("Уже играет звук.")
+            else:
+                print("Ошибка: бот не подключён к голосовому каналу.")
 
             
         # if before.channel is None and after.channel is not None:
