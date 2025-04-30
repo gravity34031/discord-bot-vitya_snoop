@@ -62,6 +62,7 @@ class EventCog(commands.Cog):
             if vc.is_connected():
                 audio_source = discord.FFmpegPCMAudio("media/mitin.mp3")
                 if not vc.is_playing():
+                    await asyncio.sleep(1)
                     vc.play(audio_source)
                     while vc.is_playing():
                         await asyncio.sleep(1)
