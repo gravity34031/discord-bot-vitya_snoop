@@ -2,6 +2,7 @@ import discord
 import asyncio
 from discord.ext import commands
 import datetime
+from random import choice as random_choice
 
 from models.models import Session, VoiceTime
 from utils.decorators import in_allowed_channels
@@ -17,6 +18,7 @@ class EventCog(commands.Cog):
         self.change_nickname = nickname_manager.change_nickname
         
         self.suggestion_channels = {'firstname': 1355601355644866721, 'secondname': 1355601431700443467, 'legendary': 1356006322356752568}
+        self.egor_voices = ["media/timofey-e.mp3", "media/leonid-e.mp3", "media/jenya-e.mp3", "media/nikita-e.mp3"]
         
         
     @commands.Cog.listener()
@@ -51,7 +53,7 @@ class EventCog(commands.Cog):
                 session.close()
 
         # play mitin welcome
-        if member.name == 'milirin_' and after.channel and before.channel == None:
+        if member.name in ['milirin_', 'mollenq'] and after.channel and before.channel == None:
             voice_channel = after.channel
             if not member.guild.voice_client:  # если бот не подключён
                 vc = await voice_channel.connect()
@@ -60,7 +62,13 @@ class EventCog(commands.Cog):
             await vc.move_to(voice_channel)
 
             if vc.is_connected():
-                audio_source = discord.FFmpegPCMAudio("media/mitin.mp3")
+                if member.name == "milirin_":
+                    audio_source = discord.FFmpegPCMAudio("media/mitin.mp3")
+                elif member.name == "mollenq":
+                    media_path = random_choice(self.egor_voices)
+                    audio_source = discord.FFmpegPCMAudio(media_path)
+                else:
+                    return
                 if not vc.is_playing():
                     await asyncio.sleep(1)
                     vc.play(audio_source)
