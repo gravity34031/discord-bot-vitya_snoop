@@ -55,7 +55,7 @@ class EventCog(commands.Cog):
                 session.close()
 
         # play mitin welcome
-        if member.name in ['milirin_', 'mollenq', 'mencer'] and after.channel and before.channel == None:
+        if member.name in ['milirin_', 'mollenq', 'mencer', 'gravity9525'] and after.channel and before.channel == None:
             voice_channel = after.channel
             if not member.guild.voice_client:  # если бот не подключён
                 vc = await voice_channel.connect()
@@ -71,6 +71,20 @@ class EventCog(commands.Cog):
                     audio_source = discord.FFmpegPCMAudio(media_path)
                 elif member.name == "mencer":
                     audio_source = discord.FFmpegPCMAudio("media/jenya.mp3")
+                elif member.name == "gravity9525":
+                    session = Session()
+                    now = datetime.datetime.now()
+                    try:
+                        if now.day != session.query(VoiceTime).filter_by(user_id=member.id, guild_id=member.guild.id).first().last_played_day:
+                            session.query(VoiceTime).filter_by(user_id=member.id, guild_id=member.guild.id).update({"last_played_day": now.day})
+                            audio_source = discord.FFmpegPCMAudio("media/komarov-first.mp3")
+                        else:
+                            audio_source = discord.FFmpegPCMAudio("media/komarov-second.mp3")
+                    except:
+                        audio_source = discord.FFmpegPCMAudio("media/komarov-first.mp3")
+                    finally:
+                        session.commit()
+                        session.close()
                 else:
                     return
                 if not vc.is_playing():
