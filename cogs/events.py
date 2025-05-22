@@ -55,7 +55,7 @@ class EventCog(commands.Cog):
                 session.close()
 
         # play mitin welcome
-        if member.name in ['milirin_', 'mollenq'] and after.channel and before.channel == None:
+        if member.name in ['milirin_', 'mollenq', 'mencer'] and after.channel and before.channel == None:
             voice_channel = after.channel
             if not member.guild.voice_client:  # если бот не подключён
                 vc = await voice_channel.connect()
@@ -69,6 +69,8 @@ class EventCog(commands.Cog):
                 elif member.name == "mollenq":
                     media_path = random_choice(self.egor_voices)
                     audio_source = discord.FFmpegPCMAudio(media_path)
+                elif member.name == "mencer":
+                    audio_source = discord.FFmpegPCMAudio("media/jenya.mp3")
                 else:
                     return
                 if not vc.is_playing():
