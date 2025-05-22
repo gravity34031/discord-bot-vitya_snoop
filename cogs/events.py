@@ -1,5 +1,6 @@
 import discord
 import asyncio
+import os
 from discord.ext import commands
 import datetime
 from random import choice as random_choice
@@ -18,8 +19,9 @@ class EventCog(commands.Cog):
         self.change_nickname = nickname_manager.change_nickname
         
         self.suggestion_channels = {'firstname': 1355601355644866721, 'secondname': 1355601431700443467, 'legendary': 1356006322356752568}
-        self.egor_voices = ["media/timofey-e.mp3", "media/leonid-e.mp3", "media/jenya-e.mp3", "media/nikita-e.mp3"]
-        
+        self.egor_voices_path = "media/egor_welcome"
+        self.egor_voices = [f for f in os.listdir(self.egor_voices_path) if os.path.isfile(os.path.join(self.egor_voices_path, f))]
+        print(self.egor_voices)   
         
     @commands.Cog.listener()
     async def on_voice_state_update(self, member, before, after, *args):
