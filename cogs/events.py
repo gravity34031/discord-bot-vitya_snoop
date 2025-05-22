@@ -20,7 +20,7 @@ class EventCog(commands.Cog):
         
         self.suggestion_channels = {'firstname': 1355601355644866721, 'secondname': 1355601431700443467, 'legendary': 1356006322356752568}
         self.egor_voices_path = "media/egor_welcome"
-        self.egor_voices = [f for f in os.listdir(self.egor_voices_path) if os.path.isfile(os.path.join(self.egor_voices_path, f))]
+        self.egor_voices = [os.path.join(self.egor_voices_path, file_name) for file_name in os.listdir(self.egor_voices_path) if os.path.isfile(os.path.join(self.egor_voices_path, file_name))]
         print(self.egor_voices)   
         
     @commands.Cog.listener()
