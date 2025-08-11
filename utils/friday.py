@@ -23,13 +23,18 @@ class Schedule:
         time_offset = 0 if debug else server_hour_offset
         self.hour = (hour + time_offset) % 24
         self.minute = minute
+        self.scheduler = AsyncIOScheduler()
+        self._started = False  # <--- repeat control
         
-    def start(self): 
+    def start(self):
+        if self._started:
+            print("Планировщик уже запущен. Пропускаем повторный запуск.")
+            return
+        self._started = True
         print("\nЗапуск планировщика...")
-        scheduler = AsyncIOScheduler()
         day, hour, minute = self.day, self.hour, self.minute
-        scheduler.add_job(self._post_photo, CronTrigger(day_of_week=day, hour=hour, minute=minute))  # Локальное время
-        scheduler.start()
+        self.scheduler.add_job(self._post_photo, CronTrigger(day_of_week=day, hour=hour, minute=minute))  # Локальное время
+        self.scheduler.start()
         print(f"Планировщик запущен. на {day} в {hour}:{minute}\n")
         
         

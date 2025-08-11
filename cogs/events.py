@@ -2,26 +2,26 @@ import discord
 import asyncio
 import os
 from discord.ext import commands
-import datetime
+from datetime import datetime
 from random import choice as random_choice
 
-from models.models import Session, VoiceTime
+from models.models import Session, UserStats
 from utils.decorators import in_allowed_channels
 
 
 class EventCog(commands.Cog):
-    def __init__(self, bot, cache_manager, nickname_manager, model_view):
+    def __init__(self, bot, cache_manager, nickname_manager, model_view, achievement_manager):
         self.bot = bot
         self.cache_manager = cache_manager
         self.nickname_manager = nickname_manager
         self.model_view = model_view
+        self.achievement_manager = achievement_manager
         
         self.change_nickname = nickname_manager.change_nickname
         
         self.suggestion_channels = {'firstname': 1355601355644866721, 'secondname': 1355601431700443467, 'legendary': 1356006322356752568}
         self.egor_voices_path = "media/egor_welcome"
         self.egor_voices = [os.path.join(self.egor_voices_path, file_name) for file_name in os.listdir(self.egor_voices_path) if os.path.isfile(os.path.join(self.egor_voices_path, file_name))]
-        print(self.egor_voices)   
         
     @commands.Cog.listener()
     async def on_voice_state_update(self, member, before, after, *args):
@@ -30,24 +30,24 @@ class EventCog(commands.Cog):
             try:
                 session = Session()
                 user_id, guild_id = member.id, member.guild.id
-                voice_entry = session.query(VoiceTime).filter_by(user_id=user_id, guild_id=guild_id).first()
+                stats_entry = session.query(UserStats).filter_by(user_id=user_id, guild_id=guild_id).first()
                 # user entered voice channel
                 if before.channel is None and after.channel is not None:
-                    now = datetime.datetime.now()
-                    if not voice_entry:
-                        voice_entry = VoiceTime(user_id=user_id, guild_id=guild_id, last_join=now, total_time=0)
-                        session.add(voice_entry)
+                    now = datetime.now()
+                    if not stats_entry:
+                        stats_entry = UserStats(user_id=user_id, guild_id=guild_id, last_join=now, total_time=0)
+                        session.add(stats_entry)
                     else:
-                        voice_entry.last_join = now
+                        stats_entry.last_join = now
                 # user leaved all voice channels
                 elif before.channel is not None and after.channel is None:
-                    if voice_entry and voice_entry.last_join:
-                        join_time = voice_entry.last_join
-                        time_spent = datetime.datetime.now() - join_time
+                    if stats_entry and stats_entry.last_join:
+                        join_time = stats_entry.last_join
+                        time_spent = datetime.now() - join_time
                         minutes = round(time_spent.total_seconds() / 60, 2)
-                        voice_entry.total_time += minutes
-                        voice_entry.total_time = round(voice_entry.total_time, 2)
-                        voice_entry.last_join = None
+                        stats_entry.total_time += minutes
+                        stats_entry.total_time = round(stats_entry.total_time, 2)
+                        stats_entry.last_join = None
             except:
                 print('error while updating database.')
             finally:
@@ -73,10 +73,10 @@ class EventCog(commands.Cog):
                     audio_source = discord.FFmpegPCMAudio("media/jenya.mp3")
                 elif member.name == "gravity9525":
                     session = Session()
-                    now = datetime.datetime.now()
+                    now = datetime.now()
                     try:
-                        if now.day != session.query(VoiceTime).filter_by(user_id=member.id, guild_id=member.guild.id).first().last_played_day:
-                            session.query(VoiceTime).filter_by(user_id=member.id, guild_id=member.guild.id).update({"last_played_day": now.day})
+                        if now.day != session.query(UserStats).filter_by(user_id=member.id, guild_id=member.guild.id).first().last_played_day:
+                            session.query(UserStats).filter_by(user_id=member.id, guild_id=member.guild.id).update({"last_played_day": now.day})
                             audio_source = discord.FFmpegPCMAudio("media/komarov-first.mp3")
                         else:
                             audio_source = discord.FFmpegPCMAudio("media/komarov-second.mp3")
@@ -113,7 +113,7 @@ class EventCog(commands.Cog):
         if message.author.name == 'mollenq':
             await message.add_reaction('🍑')
             
-        await self.bot.process_commands(message)
+        # await self.bot.process_commands(message)
       
         
     @commands.Cog.listener()
@@ -176,10 +176,10 @@ class EventCog(commands.Cog):
                 await self.cache_manager.add_name(legend, type_id) # add legend
                 await self.cache_manager.add_name(legend.split()[0].capitalize(), 0) # add firstname
                 await self.cache_manager.add_name(legend.split()[1].capitalize(), 1) # add lastname
-        
+                
     
 
         
         
 async def setup(bot):
-    await bot.add_cog(EventCog(bot, bot.cache_manager, bot.nickname_manager, bot.model_view))
+    await bot.add_cog(EventCog(bot, bot.cache_manager, bot.nickname_manager, bot.model_view, bot.achievement_manager))

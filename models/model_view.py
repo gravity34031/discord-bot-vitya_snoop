@@ -1,6 +1,6 @@
 import datetime
 
-from models.models import VoiceTime, Session
+from models.models import Session, UserStats, UserSeasonStats, Season, Achievement
 
 
 class ModelView:
@@ -12,13 +12,23 @@ class ModelView:
         try:
             session = Session()
             user_id, guild_id = member.id, member.guild.id
-            voice_entry = session.query(VoiceTime).filter_by(user_id=user_id, guild_id=guild_id).first()
-            if voice_entry is None:
-                voice_entry = VoiceTime(user_id=user_id, guild_id=guild_id, total_time=0)
-                session.add(voice_entry)
-            if voice_entry.snoop_counter is None:
-                voice_entry.snoop_counter = 0
-            voice_entry.snoop_counter += 1
+            stats_entry = session.query(UserStats).filter_by(user_id=user_id, guild_id=guild_id).first()
+            season_id = self.get_current_season_id()
+            stats_season_entry = session.query(UserSeasonStats).filter_by(user_id=user_id, guild_id=guild_id, season_id=season_id).first()
+            
+            if stats_entry is None:
+                stats_entry = UserStats(user_id=user_id, guild_id=guild_id, total_time=0)
+                session.add(stats_entry)
+            if stats_season_entry is None:
+                stats_season_entry = UserSeasonStats(user_id=user_id, guild_id=guild_id, season_id=season_id)
+                session.add(stats_season_entry)
+                
+            entries = [stats_entry, stats_season_entry]
+            for entry in entries:
+                session.add(stats_entry)
+                if entry.snoop_counter is None:
+                    entry.snoop_counter = 0
+                entry.snoop_counter += 1
         except:
             print('error while increasing snoop_counter in database.')
         finally:
@@ -33,7 +43,7 @@ class ModelView:
             now = datetime.datetime.now()
 
             # Проверяем всех пользователей в базе
-            all_entries = session.query(VoiceTime).all()
+            all_entries = session.query(UserStats).all()
             active_users = set()  # Список пользователей, кто СЕЙЧАС в голосе
 
             # Проверяем голосовые чаты
@@ -44,12 +54,12 @@ class ModelView:
                         guild_id = guild.id
                         active_users.add((user_id, guild_id))  # Помечаем, что этот юзер сейчас в голосе
 
-                        voice_entry = session.query(VoiceTime).filter_by(user_id=user_id, guild_id=guild_id).first()
+                        voice_entry = session.query(UserStats).filter_by(user_id=user_id, guild_id=guild_id).first()
                         if voice_entry:
                             print(f"\t{member.display_name} уже в голосовом чате ({vc.name}).")
                         else:
                             # Если записи нет, создаем новую
-                            voice_entry = VoiceTime(user_id=user_id, guild_id=guild_id, last_join=now, total_time=0)
+                            voice_entry = UserStats(user_id=user_id, guild_id=guild_id, last_join=now, total_time=0)
                             session.add(voice_entry)
 
             # Теперь проверяем, кто БЫЛ в голосе, но сейчас НЕ в голосе (значит, он вышел во время отключения бота)
@@ -72,3 +82,37 @@ class ModelView:
         finally:
             session.commit()
             session.close()
+            
+    
+    def get_current_season_id(self):
+        date = datetime.datetime.now()
+        session = Session()
+        try:
+            season = session.query(Season).filter(Season.start_date <= date, Season.is_current == True).first()
+            if season:
+                return season.id
+            return None
+        except Exception as e:
+            print(f"error while getting current season: {e}")
+        finally:
+            session.commit()
+            session.close()
+        
+        
+    def get_achievement_levels(self, achievement_name):
+        ach_levels = {}  
+        session = Session()
+        try:
+            achievements = session.query(Achievement).filter(
+                Achievement.name.ilike(f'%{achievement_name}%')  # нечувствительно к регистру
+            ).all()
+            for ach in achievements:
+                ach_levels[ach.level] = ach.name
+        except Exception as e:
+            print(f"error while handling special achievements: {e}")
+        finally:
+            session.commit()
+            session.close()
+            
+        return ach_levels
+    

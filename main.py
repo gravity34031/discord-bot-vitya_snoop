@@ -3,15 +3,20 @@ import os
 from dotenv import load_dotenv
 from discord.ext import commands
 
-from utils.name_cache_manager import NameCacheManager
-from utils.nick import NicknameManager
+from utils.nicknames.name_cache_manager import NameCacheManager
+from utils.nicknames.nickname_manager import NicknameManager
+from utils.achievements.manager import AchievementManager
+from utils.achievements.special_achievements import SpecialAchievements
 from utils.friday import Schedule
-from models.functions import ModelView
+from models.model_view import ModelView
 
 # Замените на свой токен
 load_dotenv()
-TOKEN = os.getenv('discord_token')
 DEBUG = str(os.getenv('DEBUG')).capitalize() == "True"
+if DEBUG:
+    TOKEN = os.getenv('discord_token_dev')
+else:
+    TOKEN = os.getenv('discord_token')
 
 
 intents = discord.Intents.all()
@@ -32,15 +37,27 @@ bot = commands.Bot(command_prefix='!', intents=intents)
 @bot.event
 async def on_ready():
     bot.debug = DEBUG
-    bot.cache_manager = NameCacheManager()
-    bot.nickname_manager = NicknameManager(bot, bot.cache_manager)
-    bot.model_view = ModelView(bot)
-    await bot.cache_manager.load_caches()
-    Schedule(bot, bot.debug, server_hour_offset=-5, day="fri", hour=10, minute=00).start()
+    bot.bot_channel = 'анал-витька'
     
+    # load managers
+    bot.model_view = ModelView(bot)
+    bot.cache_manager = NameCacheManager()
+    bot.nickname_manager = NicknameManager(bot.cache_manager)
+    bot.achievement_manager = AchievementManager(bot, bot.model_view)
+    bot.special_achievements = SpecialAchievements(bot.achievement_manager, bot.model_view)
+    
+    await bot.cache_manager.load_caches()
+    
+    # load schedule for friday
+    if not hasattr(bot, 'schedule'):
+        bot.schedule = Schedule(bot, bot.debug, server_hour_offset=-5, day="fri", hour=10, minute=00)
+        bot.schedule.start()
+    
+    # load cogs
     await load_cogs()
     
     print(f"Бот {bot.user.name} запущен! В {'тестовом' if DEBUG else 'боевом'} режиме")
+    # sync slash commands
     try:
         await bot.tree.sync()
         print("\nСлаши-команды синхронизированы.")
@@ -50,6 +67,7 @@ async def on_ready():
         print(f"Ошибка при синхронизации: {e}")
     print()
 
+    # update voice stats
     bot.model_view.update_voice_stats(bot)
     print()
     

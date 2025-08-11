@@ -3,8 +3,8 @@ from random import choice as random_choice
 from random import uniform as random_uniform
 from typing import Tuple
 
-from utils.constants import RU_FIRST_NAMES, RU_LAST_NAMES, RU_LEGENDARY_NAMES, ROLES
-from models.models import Session, VoiceTime
+from utils.nicknames.constants import RU_FIRST_NAMES, RU_LAST_NAMES, RU_LEGENDARY_NAMES, ROLES
+from models.models import Session, UserStats
 
 
 class NicknameManager:
@@ -16,8 +16,7 @@ class NicknameManager:
     legendary_mult = 3846
     base_pool_size = 50
     
-    def __init__(self, bot, cache_manager):
-        self.bot = bot
+    def __init__(self, cache_manager):
         self.cache_manager = cache_manager
         
 
@@ -90,11 +89,11 @@ class NicknameManager:
         try:
             session = Session()
             user_id, guild_id = member.id, member.guild.id
-            voice_entry = session.query(VoiceTime).filter_by(user_id=user_id, guild_id=guild_id).first()
-            if voice_entry is None:
-                voice_entry = VoiceTime(user_id=user_id, guild_id=guild_id, total_time=0)
-                session.add(voice_entry)
-            hours_spent = round(voice_entry.total_time / 60, 2) if voice_entry.total_time else voice_entry.total_time
+            stats_entry = session.query(UserStats).filter_by(user_id=user_id, guild_id=guild_id).first()
+            if stats_entry is None:
+                stats_entry = UserStats(user_id=user_id, guild_id=guild_id, total_time=0)
+                session.add(stats_entry)
+            hours_spent = round(stats_entry.total_time / 60, 2) if stats_entry.total_time else stats_entry.total_time
         except:
             print('error while getting spent hours in database.')
             hours_spent = 0
