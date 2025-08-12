@@ -69,7 +69,8 @@ class CommandCog(commands.Cog):
             await interaction.response.send_message(
                 f'Время пользователя {member.display_name} ({member}) в голосовых каналах: {hours_spent} ч.\n'
                 f'Попыток сменить ник: {snoop_counter}\n'
-                f'Базовый коэффициент: {base_mult} (0.0001 за 1 час)'
+                f'Базовый коэффициент: {base_mult} (0.0001 за 1 час)\n'
+                f'Монеты: {stats_entry.coins}'
                 , ephemeral=True)
         except:
             print('error while checking database.')
