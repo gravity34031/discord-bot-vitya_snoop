@@ -5,7 +5,7 @@ from discord.ext import commands
 from datetime import datetime
 from random import choice as random_choice
 
-from models.models import Session, UserStats
+from models.models import Session, UserStats, UserStatsDev
 from utils.decorators import in_allowed_channels
 
 
@@ -31,25 +31,27 @@ class EventCog(commands.Cog):
                 session = Session()
                 user_id, guild_id = member.id, member.guild.id
                 stats_entry = session.query(UserStats).filter_by(user_id=user_id, guild_id=guild_id).first()
+                stats_dev_entry = session.query(UserStatsDev).filter_by(user_id=user_id, guild_id=guild_id).first()
+                if not stats_entry:
+                    stats_entry = UserStats(user_id=user_id, guild_id=guild_id)
+                    stats_dev_entry = UserStatsDev(user_id=user_id, guild_id=guild_id)
+                    stats_entry.dev_stats = stats_dev_entry
+                    session.add(stats_entry)
                 # user entered voice channel
                 if before.channel is None and after.channel is not None:
                     now = datetime.now()
-                    if not stats_entry:
-                        stats_entry = UserStats(user_id=user_id, guild_id=guild_id, last_join=now, total_time=0)
-                        session.add(stats_entry)
-                    else:
-                        stats_entry.last_join = now
+                    stats_entry.dev_stats.last_join = now
                 # user leaved all voice channels
                 elif before.channel is not None and after.channel is None:
-                    if stats_entry and stats_entry.last_join:
-                        join_time = stats_entry.last_join
+                    if stats_entry and stats_entry.dev_stats and stats_entry.dev_stats.last_join:
+                        join_time = stats_entry.dev_stats.last_join
                         time_spent = datetime.now() - join_time
                         minutes = round(time_spent.total_seconds() / 60, 2)
-                        stats_entry.total_time += minutes
-                        stats_entry.total_time = round(stats_entry.total_time, 2)
-                        stats_entry.last_join = None
-            except:
-                print('error while updating database.')
+                        stats_entry.time_in_voice += minutes
+                        stats_entry.time_in_voice = round(stats_entry.time_in_voice, 2)
+                        stats_entry.dev_stats.last_join = None
+            except Exception as e:
+                print(f'error while updating database.: {e}')
             finally:
                 session.commit()
                 session.close()

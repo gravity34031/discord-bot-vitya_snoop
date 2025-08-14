@@ -3,6 +3,9 @@ from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker, relationship
 import datetime
 import os
+
+from utils.constants import LEGENDARY_COOLDOWN_TOTAL
+
 Base = declarative_base()
 
 # class VoiceTime(Base):
@@ -25,21 +28,54 @@ Base = declarative_base()
     
 """ STATS """
 class UserStats(Base):
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        if not self.dev_stats:
+            self.dev_stats = UserStatsDev(user_id=self.user_id, guild_id=self.guild_id)
+
     __tablename__ = "user_stats"
     
     user_id = Column(BigInteger, primary_key=True)
     guild_id = Column(BigInteger, primary_key=True)
-    saved_nicknames = Column(Integer, ForeignKey("saved_nicknames.id"))
-    total_time = Column(Float, default=0)  # total time in voice in minutes
-    last_join = Column(DateTime, nullable=True)  # last join in any voice channel
+    saved_nicknames = Column(Integer, ForeignKey("saved_nicknames.id", ondelete="CASCADE"), nullable=True)
+    
     snoop_counter = Column(Integer, default=0)
-    last_played_day = Column(Integer, default=lambda: datetime.datetime.now().day) # last day when welcome audio was played
+    time_in_voice = Column(Float, default=0)  # total time in voice in minutes
     coins = Column(Integer, default=0)
     coins_earned = Column(Integer, default=0)
     # expend more stats in model
     # top stats for STANDART achievements
     # UserStats.achievement_stats for special achivements
-    achievement_stats = relationship("UserAchievementStats", back_populates="user_stats", uselist=False)
+    achievement_stats = relationship("UserAchievementStats", back_populates="user_stats", uselist=False, cascade="all, delete-orphan")
+    dev_stats = relationship("UserStatsDev", back_populates="user_stats", uselist=False, cascade="all, delete-orphan")
+
+
+# expands UserStats adding additional fields needed for dev purposes
+class UserStatsDev(Base):
+    __tablename__ = "user_stats_dev"
+    
+    user_id = Column(BigInteger, primary_key=True)
+    guild_id = Column(BigInteger, primary_key=True)
+    
+    __table_args__ = (
+        ForeignKeyConstraint(
+            ['user_id', 'guild_id'],
+            ['user_stats.user_id', 'user_stats.guild_id'],
+            ondelete="CASCADE"
+        ),
+    )
+
+    last_join = Column(DateTime, nullable=True)  # last join in any voice channel
+    rolls_since_rare = Column(Integer, default=0)
+    legendary_cooldown_left = Column(Integer, default=0)
+    legendary_cooldown_total = Column(Integer, default=20)
+    roll_bonus_add = Column(Float, default=0.0) # [0, 1.0]
+    roll_base_attempts = Column(Integer, default=0)     # base number of attempts to upgrade tier
+    roll_attempts_factor = Column(Float, default=1.0)   # amount of attempts with high bust, max attempts~=attempts_factor+base_attempts
+    roll_upgrade_chance = Column(Float, default=0.0)    # chance to upgrade tier by one attempt
+    last_played_day = Column(Integer, default=lambda: datetime.datetime.now().day) # last day when welcome audio was played
+    
+    user_stats = relationship("UserStats", back_populates="dev_stats", uselist=False)
 
 
 # expands UserStats for SPECIAL achievements
@@ -52,7 +88,8 @@ class UserAchievementStats(Base):
     __table_args__ = (
         ForeignKeyConstraint(
             ['user_id', 'guild_id'],
-            ['user_stats.user_id', 'user_stats.guild_id']
+            ['user_stats.user_id', 'user_stats.guild_id'],
+            ondelete="CASCADE"
         ),
     )
     
@@ -62,7 +99,7 @@ class UserAchievementStats(Base):
     nicks_added = Column(Integer, default=0)
     myths_collected = Column(Integer, default=0)
     legends_collected = Column(Integer, default=0)
-    unluck_count = Column(Integer, default=0, )
+    unluck_count = Column(Integer, default=0)
     snoops_after_legend = Column(Integer, default=0)
     # back relationship to stats of the user
     user_stats = relationship("UserStats", back_populates="achievement_stats", uselist=False)
@@ -117,17 +154,17 @@ class UserAchievement(Base):
     
     user_id = Column(BigInteger, primary_key=True)
     guild_id = Column(BigInteger, primary_key=True)
-    achievement_id = Column(Integer, ForeignKey("achievement.id"), primary_key=True)
+    achievement_id = Column(Integer, ForeignKey("achievement.id", ondelete="CASCADE"), primary_key=True)
     date_awarded = Column(DateTime, nullable=False)
     
-    achievement = relationship("Achievement", backref="user_achievements")
+    achievement = relationship("Achievement", back_populates="user_achievements", passive_deletes=True)
     
     
 class Achievement(Base):
     __tablename__ = "achievement"
     
     id = Column(Integer, primary_key=True, autoincrement=True)
-    name = Column(String, nullable=False)
+    name = Column(String, nullable=False, unique=True)
     description = Column(String, nullable=False)
     condition_description = Column(String, nullable=False, default="???") # way of getting achievement
     
@@ -138,6 +175,13 @@ class Achievement(Base):
     level = Column(Integer, nullable=False) # level describes not level of an achievement, but STATS needed to get it
     
     condition_data = Column(JSON, nullable=True) # condition data for special achievements
+    
+    user_achievements = relationship(
+        "UserAchievement",
+        back_populates="achievement",
+        cascade="all, delete-orphan",
+        passive_deletes=True
+    )
 
 
  

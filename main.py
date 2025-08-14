@@ -89,21 +89,26 @@ async def load_cogs():
     
 @bot.tree.error
 async def on_app_command_error(interaction: discord.Interaction, error):
-    if isinstance(error, discord.app_commands.CommandOnCooldown):
-        retry_after = round(error.retry_after)
-        await interaction.response.send_message(
-            f"⏳ Подожди {retry_after} сек. перед повторным использованием команды!",
-            ephemeral=True
-        )
+    try:
+        if isinstance(error, discord.app_commands.CommandOnCooldown):
+            retry_after = round(error.retry_after)
+            await interaction.response.send_message(
+                f"⏳ Подожди {retry_after} сек. перед повторным использованием команды!",
+                ephemeral=True
+            )
 
-    elif isinstance(error, discord.app_commands.CheckFailure):
-        await interaction.response.send_message(
-            "Вы не можете использовать эту команду в этом канале.",
-            ephemeral=True
-        )
-    else:
-        await interaction.response.send_message("Произошла ошибка.", ephemeral=True)
-
+        elif isinstance(error, discord.app_commands.CheckFailure):
+            await interaction.response.send_message(
+                "Вы не можете использовать эту команду в этом канале.",
+                ephemeral=True
+            )
+        else:
+            if interaction.response.is_done():
+                await interaction.followup.send("Произошла ошибка.", ephemeral=True)
+            else:
+                await interaction.response.send_message("Произошла ошибка.", ephemeral=True)
+    except Exception as e:
+        print(f"Ошибка при обработке ошибки: {e}")
     
 
 

@@ -62,14 +62,14 @@ class AchievementManager:
             for ach in achievements_season:
                 if value_season is None: break
                 if value_season >= ach.level:
-                    await self.give_achievement(user, guild, ach.name)
+                    await self.give_achievement(user, guild, ach.name, ach.id)
             
             # handle standart achievements
             value = getattr(stats, stat_name, None)
             for ach in achievements:
                 if value is None: break
                 if value >= ach.level:
-                    await self.give_achievement(user, guild, ach.name)  
+                    await self.give_achievement(user, guild, ach.name, ach.id)  
         except Exception as e:
             print(f"error while handling standart achievements: {e}, user={user}, guild_id={guild.id}, event_name={event_name}")
         finally:
@@ -77,10 +77,13 @@ class AchievementManager:
             session.close()            
     
     
-    async def give_achievement(self, user, guild, achievement_name: str):
+    async def give_achievement(self, user, guild, achievement_name: str, achievement_id: int = None):
         try:
             session = Session()
-            ach = session.query(Achievement).filter_by(name=achievement_name).first()
+            if achievement_id:
+                ach = session.query(Achievement).filter_by(name=achievement_name, id=achievement_id).first()
+            else:
+                ach = session.query(Achievement).filter_by(name=achievement_name).first()      
             if not ach: print("achievement not found"); return
             
             user_ach = session.query(UserAchievement).filter_by(user_id=user.id, guild_id=guild.id, achievement_id=ach.id).first()

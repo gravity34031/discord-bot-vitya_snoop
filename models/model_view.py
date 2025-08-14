@@ -1,6 +1,6 @@
 import datetime
 
-from models.models import Session, UserStats, UserSeasonStats, Season, Achievement
+from models.models import Session, UserStats, UserStatsDev, UserSeasonStats, Season, Achievement
 
 
 class ModelView:
@@ -17,7 +17,7 @@ class ModelView:
             stats_season_entry = session.query(UserSeasonStats).filter_by(user_id=user_id, guild_id=guild_id, season_id=season_id).first()
             
             if stats_entry is None:
-                stats_entry = UserStats(user_id=user_id, guild_id=guild_id, total_time=0)
+                stats_entry = UserStats(user_id=user_id, guild_id=guild_id, time_in_voice=0)
                 session.add(stats_entry)
             if stats_season_entry is None:
                 stats_season_entry = UserSeasonStats(user_id=user_id, guild_id=guild_id, season_id=season_id)
@@ -55,25 +55,28 @@ class ModelView:
                         active_users.add((user_id, guild_id))  # Помечаем, что этот юзер сейчас в голосе
 
                         voice_entry = session.query(UserStats).filter_by(user_id=user_id, guild_id=guild_id).first()
+                        voice_entry_devs = session.query(UserStatsDev).filter_by(user_id=user_id, guild_id=guild_id).first()
                         if voice_entry:
                             print(f"\t{member.display_name} уже в голосовом чате ({vc.name}).")
                         else:
                             # Если записи нет, создаем новую
-                            voice_entry = UserStats(user_id=user_id, guild_id=guild_id, last_join=now, total_time=0)
+                            voice_entry = UserStats(user_id=user_id, guild_id=guild_id)
+                            voice_entry_devs = UserStatsDev(user_id=user_id, guild_id=guild_id, last_join=now)
+                            voice_entry.dev_stats = voice_entry_devs
                             session.add(voice_entry)
 
             # Теперь проверяем, кто БЫЛ в голосе, но сейчас НЕ в голосе (значит, он вышел во время отключения бота)
             for entry in all_entries:
                 user_id, guild_id = entry.user_id, entry.guild_id
-                if (user_id, guild_id) not in active_users and entry.last_join:
+                if (user_id, guild_id) not in active_users and entry.dev_stats.last_join:
                     # Пользователь вышел во время отключения бота -> фиксируем его время
-                    time_spent = now - entry.last_join
+                    time_spent = now - entry.dev_stats.last_join
                     minutes = round(time_spent.total_seconds() / 60, 2)
-                    entry.total_time += minutes
-                    entry.total_time = round(entry.total_time, 2)
-                    entry.last_join = None  # Обнуляем last_join, чтобы не учитывать ошибочное время
-                elif (user_id, guild_id) in active_users and not entry.last_join:
-                    entry.last_join = now
+                    entry.time_in_voice += minutes
+                    entry.time_in_voice = round(entry.time_in_voice, 2)
+                    entry.dev_stats.last_join = None  # Обнуляем last_join, чтобы не учитывать ошибочное время
+                elif (user_id, guild_id) in active_users and not entry.dev_stats.last_join:
+                    entry.dev_stats.last_join = now
 
             print("Голосовая статистика обновлена после перезапуска.")
 

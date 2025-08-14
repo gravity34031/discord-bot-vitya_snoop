@@ -40,10 +40,10 @@ class AdminCog(commands.Cog):
     async def crud(self, interaction: Interaction, operation: str, table: str, id: int = None, data: str = None):
         """
         get, add, update, delete
-        /admin crud operation:get table:achievements (id:1) (data:level>5 and type="standart")
-        /admin crud operation:add table: achievements data:{"name":"Test1", "description":"-", "condition_description":"-", "type":"standart", "event":"snoop_counter", "level":100}
-        /admin crud operation:update table: achievements id:1 data:{"level":50}
-        /admin crud operation:delete table: achievements id:1
+        /admin crud operation:get table:achievement (id:1) (data:level>5 and type='standart')
+        /admin crud operation:add table:achievement data:{"name":"Test1", "description":"-", "condition_description":"-", "type":"standart", "event":"snoop_counter", "level":100}
+        /admin crud operation:update table:achievement id:1 data:{"level":50}
+        /admin crud operation:delete table:achievement id:1
         """
         operation = operation.lower()
         table = table.lower()

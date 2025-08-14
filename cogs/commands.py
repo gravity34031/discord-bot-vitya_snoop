@@ -10,7 +10,7 @@ from discord.ui import View, Button
 
 from models.models import Session, UserStats, UserSeasonStats, Initials, Achievement, UserAchievement, Season
 from utils.decorators import in_allowed_channels
-from utils.nicknames.constants import RARITY_STYLES
+from utils.nicknames.constants import RARITY_STYLES, ROLES
 from utils.achievements.ui import AchievementPaginator, format_achievement_embed
 from utils.functions import split_ach_title, format_achievement, roman_to_int
 
@@ -23,7 +23,6 @@ class CommandCog(commands.Cog):
         self.achievement_manager = achievement_manager
         
         self.change_nickname = nickname_manager.change_nickname
-        self.get_base_mult = nickname_manager.get_base_mult
 
 
     # randomly change nickname
@@ -54,7 +53,7 @@ class CommandCog(commands.Cog):
             user_id, guild_id = member.id, member.guild.id
             stats_entry = session.query(UserStats).filter_by(user_id=user_id, guild_id=guild_id).first()
             if stats_entry is None:
-                stats_entry = UserStats(user_id=user_id, guild_id=guild_id, total_time=0)
+                stats_entry = UserStats(user_id=user_id, guild_id=guild_id, time_in_voice=0)
                 session.add(stats_entry)
                 session.commit()
             if stats_entry.snoop_counter is None:
@@ -63,13 +62,13 @@ class CommandCog(commands.Cog):
                 session.commit()
             snoop_counter = stats_entry.snoop_counter
                 
-            hours_spent = round(stats_entry.total_time / 60, 2) if stats_entry.total_time else stats_entry.total_time
-            base_mult = self.get_base_mult(hours_spent)
+            hours_spent = round(stats_entry.time_in_voice / 60, 2) if stats_entry.time_in_voice else stats_entry.time_in_voice
+            # base_mult = self.get_base_mult(hours_spent)
 
             await interaction.response.send_message(
                 f'Время пользователя {member.display_name} ({member}) в голосовых каналах: {hours_spent} ч.\n'
                 f'Попыток сменить ник: {snoop_counter}\n'
-                f'Базовый коэффициент: {base_mult} (0.0001 за 1 час)\n'
+                # f'Базовый коэффициент: {base_mult} (0.0001 за 1 час)\n'
                 f'Монеты: {stats_entry.coins}'
                 , ephemeral=True)
         except:
@@ -91,7 +90,7 @@ class CommandCog(commands.Cog):
                 message = f"Топ {len(stats_entry)} пользователей по количеству смен ников:\n"
                 is_counter = True
             else:
-                stats_entry = session.query(UserStats).filter_by(guild_id=guild_id).order_by(UserStats.total_time.desc()).limit(10).all()
+                stats_entry = session.query(UserStats).filter_by(guild_id=guild_id).order_by(UserStats.time_in_voice.desc()).limit(10).all()
                 message = f"Топ {len(stats_entry)} пользователей по времени в голосовых каналах:\n"
                 is_counter = False
                 
@@ -101,7 +100,7 @@ class CommandCog(commands.Cog):
                 
                 indx=1
                 for entry in stats_entry:
-                    time_hours = round(entry.total_time / 60, 2) if entry.total_time else entry.total_time
+                    time_hours = round(entry.time_in_voice / 60, 2) if entry.time_in_voice else entry.time_in_voice
                     if entry.snoop_counter is None:
                         entry.snoop_counter = 0
                         session.add(stats_entry)
@@ -407,13 +406,25 @@ class CommandCog(commands.Cog):
 
     async def _run_snoop_logic(self, interaction, member):
         try:
-            nickname, rarity, base_mult = await self.change_nickname(member)
+            nickname, rarity, user_options = await self.change_nickname(member)
+            blended_chances = user_options.get('blended_chances', [])
+            bonus = user_options.get('bonus', 0.0)
+            upgrade_attempts = user_options.get('upgrade_attempts', 0)
+            upgrade_chance = user_options.get('upgrade_chance', 0.0)
+            # bonus [0, 1]
+            # blended_chances: [0.30, 0.25, 0.25, 0.15, 0.05]
+            rarity_eng_list = self.nickname_manager.TIERS
+            rarity_chances = {ROLES.get(rarity_eng_list[indx], f'{rarity_eng_list[indx]}'): str(round(chance*100, 1)) + "%" for indx, chance in enumerate(blended_chances)}
+            
             self.model_view.increase_counter(member)
 
             await interaction.followup.send(
                 f"🕵️ Ник пользователя {member} ({member.mention}) изменён на **{nickname}**\n"
+                # f"🌟 Базовый коэффициент: **{base_mult}** (0.0001 за 1 час)",
                 f"🎖️ Роль изменена на {RARITY_STYLES.get(rarity, f'**{rarity}**')}\n"
-                f"🌟 Базовый коэффициент: **{base_mult}** (0.0001 за 1 час)",
+                f"📈 Бонусный коэффициент: **{round(bonus, 3)}**\n"
+                f"🎲 Шансы дропа: {', '.join([f'{key}: {value}' for key, value in rarity_chances.items()])}\n"
+                f"🎯 Кол-во попыток улучшения: **{upgrade_attempts}** с шансом **{round(upgrade_chance*100, 1)}%**",
                 ephemeral=True
             )
             await self.achievement_manager.trigger_achievement('snoop_counter', member, member.guild, {'nickname': nickname, 'rarity': rarity})

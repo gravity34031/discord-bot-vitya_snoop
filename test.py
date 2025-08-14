@@ -477,4 +477,9 @@ EN_LEGENDARY_NAMES = [
 
 
 l = "['Работник', 'Программист', 'Тридемакс', 'Дотер', 'Тиктокер', 'Ястреб', 'Ненаркоторговец', 'Очко']"
-print(l.replace("'", "").replace("[", "").replace("]", "").replace(",", ""))
+# print(l.replace("'", "").replace("[", "").replace("]", "").replace(",", ""))
+
+
+firstname, lastname = "от", "работ"
+print()
+print(firstname[-min(len(firstname), len(lastname), 3):], lastname[-min(len(firstname), len(lastname), 3):])
