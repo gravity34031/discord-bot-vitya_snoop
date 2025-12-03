@@ -118,13 +118,16 @@ class ModelView:
         session = Session()
         try:
             season = session.query(Season).filter(Season.start_date <= date, Season.is_current == True).first()
-            if season:
-                return season.id
-            return None
+            if season is None:
+                season = Season(start_date=date, end_date=None, is_current=True)
+                session.add(season)
+                session.commit()
+                print(f"creating new season: {season}")
+            return season.id
         except Exception as e:
+            session.rollback()
             print(f"error while getting current season: {e}")
         finally:
-            session.commit()
             session.close()
         
         

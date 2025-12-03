@@ -1,6 +1,7 @@
 import discord
 import os
 from dotenv import load_dotenv
+load_dotenv()
 from discord.ext import commands
 
 from utils.nicknames.name_cache_manager import NameCacheManager
@@ -11,7 +12,6 @@ from utils.friday import Schedule
 from models.model_view import ModelView
 
 # Замените на свой токен
-load_dotenv()
 DEBUG = str(os.getenv('DEBUG')).capitalize() == "True"
 if DEBUG:
     TOKEN = os.getenv('discord_token_dev')
