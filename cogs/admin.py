@@ -62,7 +62,7 @@ class AdminCog(commands.Cog):
                 data_dict = json.loads(data)
             except:
                 # Если не JSON — значит фильтр для WHERE
-                filter_str = data
+                filter_str = data.replace('"', "'")
                 
         # find channel by its name
         channel = discord_utils.get(interaction.guild.text_channels, name=self.bot_channel_admin)

@@ -417,6 +417,7 @@ class CommandCog(commands.Cog):
             rarity_chances = {ROLES.get(rarity_eng_list[indx], f'{rarity_eng_list[indx]}'): str(round(chance*100, 1)) + "%" for indx, chance in enumerate(blended_chances)}
             
             self.model_view.increase_counter(member)
+            self.model_view.handle_stats_after_snoop(member, rarity)
 
             await interaction.followup.send(
                 f"🕵️ Ник пользователя {member} ({member.mention}) изменён на **{nickname}**\n"

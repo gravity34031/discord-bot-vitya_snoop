@@ -36,6 +36,32 @@ class ModelView:
             session.close()
             
             
+    def handle_stats_after_snoop(self, member, rarity):
+        try:
+            session = Session()
+            user_id, guild_id = member.id, member.guild.id
+            stats_entry_dev = session.query(UserStatsDev).filter_by(user_id=user_id, guild_id=guild_id).first()
+            if stats_entry_dev is None:
+                stats_entry_dev = UserStatsDev(user_id=user_id, guild_id=guild_id)
+                session.add(stats_entry_dev)
+            
+            if rarity in ('редкий', 'эпический', 'легендарный'):
+                stats_entry_dev.rolls_since_rare = 0 
+            else: 
+                stats_entry_dev.rolls_since_rare += 1
+            
+            if rarity == 'легендарный':
+                stats_entry_dev.legendary_cooldown_left = stats_entry_dev.legendary_cooldown_total
+            else:
+                stats_entry_dev.legendary_cooldown_left = max(0, stats_entry_dev.legendary_cooldown_left - 1)
+            
+        except Exception as e:
+            print('error while handling stats after snoop in database.:', e)
+        finally:
+            session.commit()
+            session.close()
+            
+            
     def update_voice_stats(self, bot):
         print("Обновление голосовых данных после перезапуска...")
         session = Session()
