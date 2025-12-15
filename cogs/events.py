@@ -57,7 +57,7 @@ class EventCog(commands.Cog):
                 session.close()
 
         # play mitin welcome
-        if member.name in ['milirin_', 'mollenq', 'mencer', 'gravity9525'] and after.channel and before.channel == None:
+        if False and member.name in ['milirin_', 'mollenq', 'mencer', 'gravity9525'] and after.channel and before.channel == None:
             voice_channel = after.channel
             if not member.guild.voice_client:  # если бот не подключён
                 vc = await voice_channel.connect()
