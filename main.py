@@ -26,7 +26,13 @@ intents.guilds = True
 intents.members = True
 intents.messages = True
 intents.reactions = True
-guild = discord.Object(id="1349770230674755684")
+if DEBUG:
+    #dev server
+    guild_id = 1377959619644751933
+else:
+    #main server
+    guild_id = 1349770230674755684
+guild = discord.Object(id=guild_id)
 
 bot = commands.Bot(command_prefix='!', intents=intents)
 
@@ -37,6 +43,7 @@ bot = commands.Bot(command_prefix='!', intents=intents)
 @bot.event
 async def on_ready():
     bot.debug = DEBUG
+    bot.guild = bot.get_guild(guild_id)
     bot.bot_channel = 'анал-витька'
     
     # load managers
@@ -50,7 +57,7 @@ async def on_ready():
     
     # load schedule for friday
     if not hasattr(bot, 'schedule'):
-        bot.schedule = Schedule(bot, bot.debug, server_hour_offset=-5, day="fri", hour=10, minute=00)
+        bot.schedule = Schedule(bot, channel_name='основной', day="fri", hour=6, minute=32)
         bot.schedule.start()
     
     # load cogs

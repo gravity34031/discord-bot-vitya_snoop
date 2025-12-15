@@ -1,0 +1,33 @@
+services:
+  app:
+    container_name: vitya-app
+    build:
+      context: .
+      dockerfile: Dockerfile
+    command: python main.py
+    env_file:
+      - ./.env
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    volumes:
+      - .:/app:cached
+
+  db:
+    container_name: vitya-bd
+    image: postgres:16
+    env_file:
+      - ./.env
+    volumes: 
+      - pgdata:/var/lib/postgresql/data
+    restart: always
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres} -d ${POSTGRES_DB:-postgres}"]
+      interval: 5s   # проверять каждые 5 секунд
+      timeout: 3s    # ждать максимум 3 секунды на ответ
+      retries: 20    # если 20 раз подряд не ответил — контейнер помечается как unhealthy
+
+
+volumes:
+  pgdata:
