@@ -57,7 +57,7 @@ async def on_ready():
     
     # load schedule for friday
     if not hasattr(bot, 'schedule'):
-        bot.schedule = Schedule(bot, channel_name='основной', day="fri", hour=6, minute=32)
+        bot.schedule = Schedule(bot, channel_name='основной', day="fri", hour=10, minute=00)
         bot.schedule.start()
     
     # load cogs

@@ -84,7 +84,7 @@ class Schedule:
         day, hour, minute = self.day, self.hour, self.minute
         # self.scheduler.add_job(self._post_photo, CronTrigger(day_of_week=day, hour=hour, minute=minute))  # Локальное время
         job = self.scheduler.add_job(
-            self._post_photo, CronTrigger(hour=hour, minute=minute),
+            self._post_photo, CronTrigger(day_of_week=day, hour=hour, minute=minute),
             id=f"job_{day}_{hour}_{minute}",
             replace_existing=True
             )  # Локальное время
