@@ -10,5 +10,11 @@
         "time": "23:59",
         "message": "С Новым годом!",
         "image": "new year.png"
+    },
+    {
+        "date": "09-01",
+        "time": "00:01",
+        "message": "С Днем рождения, Дима!",
+        "image": "dima_birthday.png"
     }
 ]
