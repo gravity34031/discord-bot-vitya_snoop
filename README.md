@@ -23,6 +23,8 @@ docker compose up -d --build
 проверить
 docker compose ps
 
+после пула перезапустить
+docker compose restart app
 
 
 #.env пример
